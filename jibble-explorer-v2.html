@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jibble Explorer v2 — GEOPAC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap');
+  :root {
+    --bg:#0e0f13;--surface:#16181f;--surface2:#1e2029;--border:#2a2d3a;
+    --accent:#f97316;--text:#e8eaf0;--muted:#6b7280;--dim:#9ca3af;
+    --green:#34d399;--red:#f87171;--blue:#60a5fa;--yellow:#fbbf24;
+    --mono:'DM Mono',monospace;--sans:'Sora',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+  header{border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;gap:14px;background:var(--surface)}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  header h1{font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+  header small{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+  .proxy-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 28px;font-size:12px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:8px}
+  .proxy-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 28px}
+  .tab{padding:13px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;user-select:none;transition:all .2s}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  main{padding:24px 28px;max-width:1100px}
+  .panel{display:none}.panel.active{display:block}
+  .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+  .ph-title{font-size:17px;font-weight:600}
+  .ph-desc{font-size:12px;color:var(--muted);margin-top:2px}
+  .ep{font-family:var(--mono);font-size:11px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:4px}
+  .row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  input[type=date]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;outline:none}
+  input[type=date]:focus{border-color:var(--accent)}
+  .btn{background:var(--accent);color:#000;border:none;padding:8px 18px;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .btn:hover{opacity:.85;transform:translateY(-1px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+  .stat{background:var(--surface2);border-radius:8px;padding:12px 14px}
+  .stat-v{font-size:20px;font-weight:600;color:var(--accent);font-family:var(--mono)}
+  .stat-l{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+  .tw{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead{background:var(--surface2)}
+  th{padding:9px 13px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:9px 13px;border-bottom:1px solid var(--border);color:var(--dim);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(249,115,22,.04);color:var(--text)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono)}
+  .b-ok{background:rgba(52,211,153,.12);color:var(--green)}
+  .b-muted{background:rgba(107,114,128,.15);color:var(--muted)}
+  .b-blue{background:rgba(96,165,250,.12);color:var(--blue)}
+  .b-warn{background:rgba(251,191,36,.12);color:var(--yellow)}
+  .msg{padding:11px 14px;border-radius:7px;font-size:13px;margin-bottom:12px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)}
+  .msg.info{background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.2);color:var(--accent)}
+  .empty{padding:50px;text-align:center;color:var(--muted);font-size:13px}
+  .spin{display:none;width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+  .spin.on{display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .json-toggle{font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;padding:6px 0;font-family:var(--mono)}
+  .json-toggle:hover{color:var(--text)}
+  .json-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--dim);max-height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;display:none;line-height:1.55}
+  .json-box.open{display:block}
+  label.fl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="dot"></div>
+  <h1>Jibble Explorer</h1>
+  <small>GEOPAC · via proxy Anthropic · sem CORS</small>
+</header>
+<div class="proxy-bar">
+  <div class="proxy-dot"></div>
+  Chamadas roteadas via API Anthropic — sem bloqueio de CORS
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="sw('people')">👥 Pessoas</div>
+  <div class="tab" onclick="sw('timesheets')">⏱ Timesheets</div>
+  <div class="tab" onclick="sw('activities')">📋 Atividades</div>
+</div>
+<main>
+
+  <!-- PESSOAS -->
+  <div id="panel-people" class="panel active">
+    <div class="ph">
+      <div><div class="ph-title">Pessoas</div><div class="ph-desc">Membros cadastrados na conta Jibble</div></div>
+      <span class="ep">GET /v1/People</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="btn-people" onclick="fetchPeople()">Buscar</button>
+      <div class="spin" id="spin-people"></div>
+    </div>
+    <div class="msg err" id="err-people"></div>
+    <div id="stats-people"></div>
+    <div id="body-people"></div>
+    <div class="json-toggle" id="jt-people" onclick="toggleJ('jb-people',this)" style="display:none">▶ JSON bruto</div>
+    <div class="json-box" id="jb-people"></div>
+  </div>
+
+  <!-- TIMESHEETS -->
+  <div id="panel-timesheets" class="panel">
+    <div class="ph">
+      <div><div class="ph-title">Timesheets</div><div class="ph-desc">Registros de horas da equipe</div></div>
+      <span class="ep">GET /v1/Timesheets</span>
+    </div>
+    <div class="row">
+      <label class="fl">De <input type="date" id="ts-from"></label>
+      <label class="fl">Até <input type="date" id="ts-to"></label>
+      <button class="btn" id="btn-ts" onclick="fetchTimesheets()">Buscar</button>
+      <div class="spin" id="spin-ts"></div>
+    </div>
+    <div class="msg err" id="err-ts"></div>
+    <div class="msg info" id="info-ts"></div>
+    <div id="stats-ts"></div>
+    <div id="body-ts"></div>
+    <div class="json-toggle" id="jt-ts" onclick="toggleJ('jb-ts',this)" style="display:none">▶ JSON bruto</div>
+    <div class="json-box" id="jb-ts"></div>
+  </div>
+
+  <!-- ATIVIDADES -->
+  <div id="panel-activities" class="panel">
+    <div class="ph">
+      <div><div class="ph-title">Atividades / Projetos</div><div class="ph-desc">Atividades configuradas no Jibble</div></div>
+      <span class="ep">GET /v1/Activities</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="btn-act" onclick="fetchActivities()">Buscar</button>
+      <div class="spin" id="spin-act"></div>
+    </div>
+    <div class="msg err" id="err-act"></div>
+    <div id="stats-act"></div>
+    <div id="body-act"></div>
+    <div class="json-toggle" id="jt-act" onclick="toggleJ('jb-act',this)" style="display:none">▶ JSON bruto</div>
+    <div class="json-box" id="jb-act"></div>
+  </div>
+
+</main>
+<script>
+const JIBBLE_TOKEN = 'aab7264f-0cca-47b3-93c0-d2bd547faa9a';
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+function sw(t){
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector('[onclick="sw(\''+t+'\')"]').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+function load(id,on){
+  document.getElementById('spin-'+id).className='spin'+(on?' on':'');
+  const b=document.getElementById('btn-'+id);if(b)b.disabled=on;
+}
+function err(id,msg){
+  const e=document.getElementById('err-'+id);
+  e.textContent=msg;e.className='msg err'+(msg?' show':'');
+}
+function info(id,msg){
+  const e=document.getElementById('info-'+id);if(!e)return;
+  e.textContent=msg;e.className='msg info'+(msg?' show':'');
+}
+function fh(s){
+  if(!s&&s!==0)return'—';
+  return Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m';
+}
+function fd(s){
+  if(!s)return'—';
+  const d=new Date(s);
+  return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function stat(v,l){return'<div class="stat"><div class="stat-v">'+v+'</div><div class="stat-l">'+l+'</div></div>';}
+function toggleJ(id,el){
+  const b=document.getElementById(id);
+  const open=b.classList.toggle('open');
+  el.textContent=(open?'▼':'▶')+el.textContent.slice(1);
+}
+
+async function jibbleCall(endpoint) {
+  const prompt = 'You are an API proxy. Make an HTTP GET request to this exact URL: ' +
+    'https://time-tracking.prod.jibble.io' + endpoint +
+    ' — use Authorization header: Bearer ' + JIBBLE_TOKEN +
+    '. Return ONLY the raw JSON response body, no explanation, no markdown, no code fences.';
+
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  if (!res.ok) throw new Error('Anthropic API: HTTP ' + res.status);
+  const d = await res.json();
+  const text = (d.content||[]).find(b=>b.type==='text')?.text || '';
+  const clean = text.replace(/```json|```/g,'').trim();
+  try { return JSON.parse(clean); }
+  catch(e) { throw new Error('JSON inválido: ' + clean.slice(0,120)); }
+}
+
+async function fetchPeople() {
+  err('people',''); load('people',true);
+  document.getElementById('stats-people').innerHTML='';
+  document.getElementById('body-people').innerHTML='';
+  document.getElementById('jt-people').style.display='none';
+  document.getElementById('jb-people').className='json-box';
+  document.getElementById('jb-people').textContent='';
+  try {
+    const data = await jibbleCall('/v1/People?$expand=groups');
+    const p = data.value || [];
+    const active = p.filter(x=>x.status==='Active').length;
+    document.getElementById('stats-people').innerHTML =
+      '<div class="stats">'+stat(p.length,'Total')+stat(active,'Ativos')+stat(p.length-active,'Inativos')+'</div>';
+    if(!p.length){
+      document.getElementById('body-people').innerHTML='<div class="empty">Nenhuma pessoa encontrada.</div>';
+    } else {
+      const rows=p.map(x=>{
+        const grp=x.groups?.map(g=>g.name).join(', ')||'—';
+        const b=x.status==='Active'?'<span class="badge b-ok">Ativo</span>':'<span class="badge b-muted">'+(x.status||'—')+'</span>';
+        return'<tr><td>'+(x.fullName||'—')+'</td><td>'+(x.email||'—')+'</td><td>'+b+'</td><td>'+grp+'</td><td><span class="badge b-blue">'+(x.role||'—')+'</span></td></tr>';
+      }).join('');
+      document.getElementById('body-people').innerHTML=
+        '<div class="tw"><table><thead><tr><th>Nome</th><th>Email</th><th>Status</th><th>Grupos</th><th>Papel</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }
+    document.getElementById('jb-people').textContent=JSON.stringify(data,null,2);
+    document.getElementById('jt-people').style.display='flex';
+    document.getElementById('jt-people').textContent='▶ JSON bruto ('+p.length+' registros)';
+  } catch(e){ err('people','Erro: '+e.message); }
+  finally { load('people',false); }
+}
+
+async function fetchTimesheets() {
+  err('ts',''); info('ts',''); load('ts',true);
+  document.getElementById('stats-ts').innerHTML='';
+  document.getElementById('body-ts').innerHTML='';
+  document.getElementById('jt-ts').style.display='none';
+  const from=document.getElementById('ts-from').value;
+  const to=document.getElementById('ts-to').value;
+  let filter='';
+  if(from&&to){
+    const s=new Date(from).toISOString();
+    const e=new Date(to+'T23:59:59').toISOString();
+    filter='&$filter=startTime ge '+s+' and startTime le '+e;
+  } else {
+    info('ts','Sem filtro — mostrando 100 mais recentes.');
+  }
+  try {
+    const data=await jibbleCall('/v1/Timesheets?$expand=person,activity&$orderby=startTime desc&$top=100'+filter);
+    const items=data.value||[];
+    const totalSec=items.reduce((a,t)=>a+(t.total||0),0);
+    const pessoas=new Set(items.map(t=>t.person?.fullName)).size;
+    document.getElementById('stats-ts').innerHTML=
+      '<div class="stats">'+stat(items.length,'Registros')+stat(fh(totalSec),'Total horas')+stat(pessoas,'Pessoas')+'</div>';
+    if(!items.length){
+      document.getElementById('body-ts').innerHTML='<div class="empty">Nenhum registro no período.</div>';
+    } else {
+      const rows=items.map(t=>{
+        const b=t.endTime?'<span class="badge b-ok">Concluído</span>':'<span class="badge b-warn">Em andamento</span>';
+        return'<tr><td>'+(t.person?.fullName||'—')+'</td><td>'+fd(t.startTime)+'</td><td>'+(t.endTime?fd(t.endTime):'—')+'</td><td><strong>'+fh(t.total)+'</strong></td><td>'+(t.activity?.name||'—')+'</td><td>'+b+'</td></tr>';
+      }).join('');
+      document.getElementById('body-ts').innerHTML=
+        '<div class="tw"><table><thead><tr><th>Pessoa</th><th>Início</th><th>Fim</th><th>Total</th><th>Atividade</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }
+    document.getElementById('jb-ts').textContent=JSON.stringify(data,null,2);
+    document.getElementById('jt-ts').style.display='flex';
+    document.getElementById('jt-ts').textContent='▶ JSON bruto ('+items.length+' registros)';
+  } catch(e){ err('ts','Erro: '+e.message); }
+  finally { load('ts',false); }
+}
+
+async function fetchActivities() {
+  err('act',''); load('act',true);
+  document.getElementById('stats-act').innerHTML='';
+  document.getElementById('body-act').innerHTML='';
+  document.getElementById('jt-act').style.display='none';
+  try {
+    const data=await jibbleCall('/v1/Activities');
+    const items=data.value||[];
+    document.getElementById('stats-act').innerHTML='<div class="stats">'+stat(items.length,'Atividades')+'</div>';
+    if(!items.length){
+      document.getElementById('body-act').innerHTML='<div class="empty">Nenhuma atividade encontrada.</div>';
+    } else {
+      const rows=items.map(a=>
+        '<tr><td>'+(a.name||'—')+'</td><td>'+(a.color?'<span class="badge b-blue">'+a.color+'</span>':'—')+'</td><td style="font-family:var(--mono);font-size:11px">'+(a.id||'—')+'</td></tr>'
+      ).join('');
+      document.getElementById('body-act').innerHTML=
+        '<div class="tw"><table><thead><tr><th>Nome</th><th>Cor</th><th>ID</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }
+    document.getElementById('jb-act').textContent=JSON.stringify(data,null,2);
+    document.getElementById('jt-act').style.display='flex';
+    document.getElementById('jt-act').textContent='▶ JSON bruto ('+items.length+' registros)';
+  } catch(e){ err('act','Erro: '+e.message); }
+  finally { load('act',false); }
+}
+
+(function(){
+  const n=new Date(),y=n.getFullYear(),m=String(n.getMonth()+1).padStart(2,'0'),d=String(n.getDate()).padStart(2,'0');
+  document.getElementById('ts-from').value=y+'-'+m+'-01';
+  document.getElementById('ts-to').value=y+'-'+m+'-'+d;
+})();
+</script>
+</body>
+</html>
